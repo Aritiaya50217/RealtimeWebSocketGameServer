@@ -93,7 +93,7 @@ jobs:
       - name: Build Docker image
         run: |
           cd auth-service
-          docker build --env-file .env -t ${{ secrets.DOCKER_USERNAME }}/auth-service:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/auth-service:latest .
           docker tag ${{ secrets.DOCKER_USERNAME }}/auth-service:latest \
                      ${{ secrets.DOCKER_USERNAME }}/auth-service:${{ github.sha }}
 
