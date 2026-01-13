@@ -79,11 +79,11 @@ jobs:
 
       # ----------------------------
       # Docker Compose up (ใช้ env ของ service)
-      - name: Docker Compose up
-        run: |
-          docker-compose --env-file auth-service/.env pull
-          docker-compose --env-file auth-service/.env build auth-service
-          docker-compose --env-file auth-service/.env up -d auth-service
+      # - name: Docker Compose up
+      #   run: |
+      #     docker-compose --env-file auth-service/.env pull
+      #     docker-compose --env-file auth-service/.env build auth-service
+      #     docker-compose --env-file auth-service/.env up -d auth-service
 
       # ----------------------------
       # Push Docker image
