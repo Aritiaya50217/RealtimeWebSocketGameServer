@@ -26,12 +26,12 @@ jobs:
           ls -la
           echo "Auth folder contents:"
           ls -la auth-service
-          echo "Match folder contents:"
-          ls -la match-service
-          echo "Game folder contents:"
-          ls -la game-service
-          echo "API Gateway contents:"
-          ls -la api-gateway
+      #    echo "Match folder contents:"
+      #   ls -la match-service
+      #   echo "Game folder contents:"
+      #    ls -la game-service
+      #    echo "API Gateway contents:"
+      #    ls -la api-gateway
 
       # ----------------------------
       # Setup Go
