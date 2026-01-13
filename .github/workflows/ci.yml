@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-test:
-    name: Build & Test Game Server Services
+    name: Build & Test Auth Service
     runs-on: ubuntu-latest
 
     steps:
@@ -20,18 +20,12 @@ jobs:
 
       # ----------------------------
       # Debug: ตรวจสอบโฟลเดอร์
-      - name: Debug service folders
+      - name: Debug auth-service folder
         run: |
           echo "Root folder: $PWD"
           ls -la
           echo "Auth folder contents:"
           ls -la auth-service
-      #    echo "Match folder contents:"
-      #   ls -la match-service
-      #   echo "Game folder contents:"
-      #    ls -la game-service
-      #    echo "API Gateway contents:"
-      #    ls -la api-gateway
 
       # ----------------------------
       # Setup Go
@@ -44,25 +38,19 @@ jobs:
       # Download dependencies
       - name: Go mod tidy & download
         run: |
-          for d in auth-service; do
-            cd $d
-            go mod tidy
-            go mod download
-            cd ..
-          done
+          cd auth-service
+          go mod tidy
+          go mod download
 
       # ----------------------------
       # Run unit tests
       - name: Run unit tests
         run: |
-          for d in auth-service; do
-            cd $d
-            go test ./internal/... -v -race
-            cd ..
-          done
+          cd auth-service
+          go test ./internal/... -v -race
 
   docker-compose-build:
-    name: Docker Compose Build & Up
+    name: Docker Compose Build & Up Auth Service
     needs: build-test
     runs-on: ubuntu-latest
 
@@ -86,20 +74,18 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # ----------------------------
-      # Build & up all services with Docker Compose
+      # Build & up auth-service with Docker Compose
       - name: Docker Compose up
         run: |
-          docker-compose --env-file .env pull
-          docker-compose --env-file .env build --parallel
-          docker-compose --env-file .env up -d
+          docker-compose --env-file auth-service/.env pull
+          docker-compose --env-file auth-service/.env build auth-service
+          docker-compose --env-file auth-service/.env up -d auth-service
 
       # ----------------------------
-      # Optional: Push images individually
-      - name: Push Docker images
+      # Push Docker image
+      - name: Push Docker image
         run: |
-          for d in auth-service; do
-            docker tag $d:latest ${{ secrets.DOCKER_USERNAME }}/$d:latest
-            docker tag $d:latest ${{ secrets.DOCKER_USERNAME }}/$d:${{ github.sha }}
-            docker push ${{ secrets.DOCKER_USERNAME }}/$d:latest
-            docker push ${{ secrets.DOCKER_USERNAME }}/$d:${{ github.sha }}
-          done
+          docker tag auth-service:latest ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+          docker tag auth-service:latest ${{ secrets.DOCKER_USERNAME }}/auth-service:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:${{ github.sha }}
