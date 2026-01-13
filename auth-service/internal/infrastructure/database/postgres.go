@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"realtime_web_socket_game_server/auth-service/internal/domain"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,14 +33,25 @@ func NewPostgresDB() *gorm.DB {
 		host, port, user, password, dbname, sslmode,
 	)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
+	var db *gorm.DB
+	var err error
+
+	for i := 0; i < 10; i++ { // retry 10 ครั้ง
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Info),
+		})
+		if err == nil {
+			break
+		}
+		log.Println("waiting for database to be ready...")
+		time.Sleep(2 * time.Second)
+	}
+
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
 
-	// AutoMigrate entities
+	// AutoMigrate
 	if err := db.AutoMigrate(&domain.User{}); err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)
 	}

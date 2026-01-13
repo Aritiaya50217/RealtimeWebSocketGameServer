@@ -9,15 +9,9 @@ import (
 	"realtime_web_socket_game_server/auth-service/internal/infrastructure/database"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 )
 
 func main() {
-
-	// โหลด .env
-	if err := godotenv.Load(".env"); err != nil {
-		log.Println("No .env file found, reading environment variables")
-	}
 
 	port := os.Getenv("APP_PORT")
 	if port == "" {
@@ -33,10 +27,12 @@ func main() {
 	db := database.NewPostgresDB()
 
 	authRepo := postgres.NewUserRepository(db)
-	authUsecase := usecase.NewLoginUsecase(authRepo, jwtSecret)
+
+	loginUsecase := usecase.NewLoginUsecase(authRepo, jwtSecret)
+	registerUsecase := usecase.NewRegisterUsecase(authRepo)
 
 	r := gin.Default()
-	handler := http.NewAuthHandler(authUsecase)
+	handler := http.NewAuthHandler(loginUsecase, registerUsecase)
 
 	r.POST("/login", handler.Login)
 	r.POST("/register", handler.Register)

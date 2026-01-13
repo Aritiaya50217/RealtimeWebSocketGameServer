@@ -8,11 +8,12 @@ import (
 )
 
 type AuthHandler struct {
-	usecase *usecase.LoginUsecase
+	loginUsecase    *usecase.LoginUsecase
+	registerUsecase *usecase.RegisterUsecase
 }
 
-func NewAuthHandler(uc *usecase.LoginUsecase) *AuthHandler {
-	return &AuthHandler{usecase: uc}
+func NewAuthHandler(uc *usecase.LoginUsecase, registerUsecase *usecase.RegisterUsecase) *AuthHandler {
+	return &AuthHandler{loginUsecase: uc, registerUsecase: registerUsecase}
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -26,7 +27,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.usecase.Login(c, req.Username, req.Password)
+	token, err := h.loginUsecase.Login(req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -46,7 +47,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	if err := h.usecase.Register(c, req.Username, req.Password); err != nil {
+	if err := h.registerUsecase.Register(req.Username, req.Password); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

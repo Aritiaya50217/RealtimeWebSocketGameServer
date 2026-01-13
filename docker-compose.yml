@@ -21,7 +21,7 @@ services:
     ports:
       - "${APP_PORT}:8080"
     env_file:
-      - ./auth-service/.env
+      - .env
     depends_on:
       - postgres
     restart: always
