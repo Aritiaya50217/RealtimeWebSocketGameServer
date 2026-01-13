@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ----------------------------
+  # Build & Test
   build-test:
     name: Build & Test Auth Service
     runs-on: ubuntu-latest
@@ -49,6 +51,8 @@ jobs:
           cd auth-service
           go test ./internal/... -v -race
 
+  # ----------------------------
+  # Docker Compose Build & Up
   docker-compose-build:
     name: Docker Compose Build & Up Auth Service
     needs: build-test
@@ -74,7 +78,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       # ----------------------------
-      # Build & up auth-service with Docker Compose
+      # Docker Compose up (ใช้ env ของ service)
       - name: Docker Compose up
         run: |
           docker-compose --env-file auth-service/.env pull

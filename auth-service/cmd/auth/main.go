@@ -9,9 +9,16 @@ import (
 	"realtime_web_socket_game_server/auth-service/internal/infrastructure/database"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	// โหลด .env
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("No .env file found, reading environment variables")
+	}
+
 	port := os.Getenv("APP_PORT")
 	if port == "" {
 		port = "8080"
