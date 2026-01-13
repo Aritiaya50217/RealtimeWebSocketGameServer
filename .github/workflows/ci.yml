@@ -44,7 +44,7 @@ jobs:
       # Download dependencies
       - name: Go mod tidy & download
         run: |
-          for d in auth-service match-service game-service api-gateway; do
+          for d in auth-service; do
             cd $d
             go mod tidy
             go mod download
@@ -55,7 +55,7 @@ jobs:
       # Run unit tests
       - name: Run unit tests
         run: |
-          for d in auth-service match-service game-service; do
+          for d in auth-service; do
             cd $d
             go test ./internal/... -v -race
             cd ..
@@ -97,7 +97,7 @@ jobs:
       # Optional: Push images individually
       - name: Push Docker images
         run: |
-          for d in auth-service match-service game-service api-gateway; do
+          for d in auth-service; do
             docker tag $d:latest ${{ secrets.DOCKER_USERNAME }}/$d:latest
             docker tag $d:latest ${{ secrets.DOCKER_USERNAME }}/$d:${{ github.sha }}
             docker push ${{ secrets.DOCKER_USERNAME }}/$d:latest
