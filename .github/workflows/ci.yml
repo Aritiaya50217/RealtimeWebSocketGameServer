@@ -58,7 +58,7 @@ jobs:
       - name: Build binary
         run: |
           cd auth-service
-          go build -v -o ./bin/auth-service ./cmd
+          go build -v -o ./bin/auth-service ./cmd/auth
 
   # ----------------------------
   # Docker Build & Push
