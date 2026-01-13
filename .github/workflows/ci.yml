@@ -1,0 +1,156 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build & Test Game Server Services
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: game
+          POSTGRES_PASSWORD: game
+          POSTGRES_DB: game
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U game"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      zookeeper:
+        image: bitnami/zookeeper:latest
+        ports:
+          - 2181:2181
+        options: >-
+          --health-cmd "echo ruok | nc localhost 2181 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      kafka:
+        image: bitnami/kafka:latest
+        env:
+          KAFKA_CFG_ZOOKEEPER_CONNECT: localhost:2181
+          ALLOW_PLAINTEXT_LISTENER: "yes"
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "echo dump | nc localhost 9092 || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # ----------------------------
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ----------------------------
+      # Debug: ตรวจสอบโฟลเดอร์
+      - name: Debug service folders
+        run: |
+          echo "Root folder: $PWD"
+          ls -la
+          echo "Auth folder contents:"
+          ls -la auth-service
+          echo "Match folder contents:"
+          ls -la match-service
+          echo "Game folder contents:"
+          ls -la game-service
+          echo "API Gateway contents:"
+          ls -la api-gateway
+
+      # ----------------------------
+      # Setup Go
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+
+      # ----------------------------
+      # Download dependencies & tidy
+      - name: Go mod tidy & download
+        run: |
+          for d in auth-service match-service game-service api-gateway; do
+            cd $d
+            go mod tidy
+            go mod download
+            cd ..
+          done
+
+      # ----------------------------
+      # Run unit tests
+      - name: Run unit tests
+        run: |
+          for d in auth-service match-service game-service; do
+            cd $d
+            go test ./internal/... -v -race
+            cd ..
+          done
+
+      # ----------------------------
+      # Build binaries (optional)
+      - name: Build binaries
+        run: |
+          for d in auth-service match-service game-service api-gateway; do
+            cd $d
+            go build -v -o ./bin/${d} ./cmd
+            cd ..
+          done
+
+  docker:
+    name: Docker Build & Push
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      # ----------------------------
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ----------------------------
+      # Docker login
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # ----------------------------
+      # Build & Push Docker Images
+      - name: Build & Push Docker images
+        run: |
+          for d in auth-service match-service game-service api-gateway; do
+            cd $d
+            docker build -t ${{ secrets.DOCKER_USERNAME }}/$d:latest .
+            docker tag ${{ secrets.DOCKER_USERNAME }}/$d:latest ${{ secrets.DOCKER_USERNAME }}/$d:${{ github.sha }}
+            docker push ${{ secrets.DOCKER_USERNAME }}/$d:latest
+            docker push ${{ secrets.DOCKER_USERNAME }}/$d:${{ github.sha }}
+            cd ..
+          done
