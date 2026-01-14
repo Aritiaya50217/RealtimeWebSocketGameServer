@@ -28,3 +28,13 @@ func TestRefreshToken_Refresh(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, accessToken, "new access token should be returned")
 }
+
+func TestRefreshToken_Expired(t *testing.T) {
+	mockRepo := &ExpiredMockRefreshRepo{}
+	jwtSecret := "secret123"
+	refreshUC := NewRefreshTokenUsecase(mockRepo, jwtSecret)
+
+	_, err := refreshUC.Refresh("dummy_token", jwtSecret)
+	assert.Error(t, err)
+	assert.Equal(t, "refresh token expired", err.Error())
+}
