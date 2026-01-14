@@ -27,15 +27,18 @@ func main() {
 	db := database.NewPostgresDB()
 
 	authRepo := postgres.NewUserRepository(db)
+	refreshRepo := postgres.NewRefreshTokenRepository(db)
 
-	loginUsecase := usecase.NewLoginUsecase(authRepo, jwtSecret)
+	refreshUsecase := usecase.NewRefreshTokenUsecase(refreshRepo, jwtSecret)
+	loginUsecase := usecase.NewLoginUsecase(authRepo, refreshUsecase, jwtSecret)
 	registerUsecase := usecase.NewRegisterUsecase(authRepo)
 
 	r := gin.Default()
-	handler := http.NewAuthHandler(loginUsecase, registerUsecase)
+	handler := http.NewAuthHandler(loginUsecase, registerUsecase, refreshUsecase)
 
 	r.POST("/login", handler.Login)
 	r.POST("/register", handler.Register)
+	r.POST("/refresh", handler.Refresh)
 
 	r.Run(":" + port)
 
