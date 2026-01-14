@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"strconv"
 	"time"
 
 	"realtime_web_socket_game_server/auth-service/internal/domain"
@@ -30,7 +31,7 @@ func (r *RefreshTokenRepository) Find(token string) (string, time.Time, error) {
 	if err := r.db.Where("token = ?", token).First(&refresh).Error; err != nil {
 		return "", time.Time{}, err
 	}
-	return string(refresh.UserID), refresh.ExpiresAt, nil
+	return strconv.FormatInt(refresh.UserID, 10), refresh.ExpiresAt, nil
 }
 
 func (r *RefreshTokenRepository) Delete(token string) error {
