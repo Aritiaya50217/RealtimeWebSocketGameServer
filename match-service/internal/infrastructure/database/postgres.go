@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"realtime_web_socket_game_server/auth-service/internal/domain"
+	"realtime_web_socket_game_server/match-service/internal/domain"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -13,12 +13,12 @@ import (
 )
 
 func NewPostgresDB() *gorm.DB {
-	host := os.Getenv("DB_HOST_AUTH_SERVICE")
-	port := os.Getenv("DB_PORT_AUTH_SERVICE")
-	user := os.Getenv("DB_USER_AUTH_SERVICE")
-	password := os.Getenv("DB_PASSWORD_AUTH_SERVICE")
-	dbname := os.Getenv("DB_NAME_AUTH_SERVICE")
-	sslmode := os.Getenv("DB_SSLMODE_AUTH_SERVICE")
+	host := os.Getenv("DB_HOST_MATCH_SERVICE")
+	port := os.Getenv("DB_PORT_MATCH_SERVICE")
+	user := os.Getenv("DB_USER_MATCH_SERVICE")
+	password := os.Getenv("DB_PASSWORD_MATCH_SERVICE")
+	dbname := os.Getenv("DB_NAME_MATCH_SERVICE")
+	sslmode := os.Getenv("DB_SSLMODE_MATCH_SERVICE")
 
 	if host == "" || port == "" || user == "" || password == "" || dbname == "" {
 		log.Fatal("database environment variables are not set properly")
@@ -52,7 +52,7 @@ func NewPostgresDB() *gorm.DB {
 	}
 
 	// AutoMigrate
-	if err := db.AutoMigrate(&domain.User{}, &domain.Refresh{}); err != nil {
+	if err := db.AutoMigrate(&domain.Match{}); err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)
 	}
 

@@ -1,13 +1,13 @@
 version: "3.9"
 
 services:
-  postgres:
+  postgres-auth-service:
     image: postgres:16
-    container_name: postgres
+    container_name: postgres-auth-service
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER_AUTH_SERVICE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD_AUTH_SERVICE}
+      POSTGRES_DB: ${DB_NAME_AUTH_SERVICE}
     ports:
       - "5433:5432"
     volumes:
@@ -19,12 +19,38 @@ services:
       dockerfile: Dockerfile
     container_name: auth_service
     ports:
-      - "${APP_PORT}:8080"
+      - "${AUTH_SERVICE_PORT}:8080"
     env_file:
       - .env
     depends_on:
-      - postgres
+      - postgres-auth-service
     restart: always
 
+  match-service:
+    build:
+      context: ./match-service
+      dockerfile: Dockerfile
+    container_name: match_service
+    ports:
+      - "${MATCH_SERVICE_PORT}:8080"
+    env_file:
+      - .env
+    depends_on:
+      - postgres-match-service
+    restart: always
+
+  postgres-match-service:
+    image: postgres:16
+    container_name: postgres-match-service
+    environment:
+      POSTGRES_USER: ${DB_USER_MATCH_SERVICE}
+      POSTGRES_PASSWORD: ${DB_PASSWORD_MATCH_SERVICE}
+      POSTGRES_DB: ${DB_NAME_MATCH_SERVICE}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+      
 volumes:
   postgres_data:

@@ -13,7 +13,7 @@ import (
 
 func main() {
 
-	port := os.Getenv("APP_PORT")
+	port := os.Getenv("AUTH_SERVICE_PORT")
 	if port == "" {
 		port = "8080"
 	}
