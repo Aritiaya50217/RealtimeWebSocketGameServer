@@ -7,9 +7,9 @@ import (
 
 // serialize payload
 func BuildMatchCreatedPayload(match *domain.Match) string {
-	payload := fmt.Sprintf(`{"match_id":"%s","player_ids":[`, match.ID)
+	payload := fmt.Sprintf(`{"match_id":"%v","player_ids":[`, match.ID)
 	for i, id := range match.PlayerIDs {
-		payload += fmt.Sprintf(`%d`, id)
+		payload += fmt.Sprintf(`%v`, id)
 		if i < len(match.PlayerIDs)-1 {
 			payload += ","
 		}
