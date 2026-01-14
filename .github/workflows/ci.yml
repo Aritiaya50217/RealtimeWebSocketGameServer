@@ -10,97 +10,101 @@ on:
 jobs:
   # ----------------------------
   # Build & Test Auth Service
-  build-test:
+  auth-build-test:
     name: Build & Test Auth Service
     runs-on: ubuntu-latest
 
     steps:
-      # ----------------------------
-      # Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ----------------------------
-      # Debug: ตรวจสอบโฟลเดอร์
-      - name: Debug auth-service folder
-        run: |
-          echo "Root folder: $PWD"
-          ls -la
-          echo "Auth folder contents:"
-          ls -la auth-service
-
-      # ----------------------------
-      # Setup Go
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.24.x"
 
-      # ----------------------------
-      # Download dependencies
-      - name: Go mod tidy & download
+      - name: Download dependencies
         run: |
           cd auth-service
           go mod tidy
           go mod download
 
-      # ----------------------------
-      # Run unit tests
       - name: Run unit tests
         run: |
           cd auth-service
           go test ./internal/... -v -race
 
-      # ----------------------------
-      # Build binary
       - name: Build binary
         run: |
           cd auth-service
           go build -v -o ./bin/auth-service ./cmd/auth
 
   # ----------------------------
-  # Docker Build & Push
-  docker:
-    name: Docker Build & Push 
-    needs: build-test
+  # Build & Test Match Service
+  match-build-test:
+    name: Build & Test Match Service
     runs-on: ubuntu-latest
+    needs: auth-build-test   # ถ้าอยากให้ auth-run ก่อน match-run
 
     steps:
-      # ----------------------------
-      # Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ----------------------------
-      # Debug Docker secrets
-      - name: Debug Docker username
-        run: echo "DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}"
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
 
-      # ----------------------------
-      # Docker login
-      - name: Login Docker Hub
+      - name: Download dependencies
+        run: |
+          cd match-service
+          go mod tidy
+          go mod download
+
+      - name: Run unit tests
+        run: |
+          cd match-service
+          go test ./internal/... -v -race
+
+      - name: Build binary
+        run: |
+          cd match-service
+          go build -v -o ./bin/match-service ./cmd/match
+
+  # ----------------------------
+  # Docker Build & Push (ทั้งสอง service)
+  docker-build-push:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [auth-build-test, match-build-test]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Docker login
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # ----------------------------
-      # Build Docker image
-      - name: Build Docker image
+      - name: Build & Push Auth Service Docker
         run: |
           cd auth-service
           docker build -t ${{ secrets.DOCKER_USERNAME }}/auth-service:latest .
           docker tag ${{ secrets.DOCKER_USERNAME }}/auth-service:latest \
                      ${{ secrets.DOCKER_USERNAME }}/auth-service:${{ github.sha }}
-
-      # ----------------------------
-      # Push Docker image
-      - name: Push Docker image
-        run: |
-          cd auth-service
           docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/auth-service:${{ github.sha }}
+
+      - name: Build & Push Match Service Docker
+        run: |
+          cd match-service
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/match-service:latest .
+          docker tag ${{ secrets.DOCKER_USERNAME }}/match-service:latest \
+                     ${{ secrets.DOCKER_USERNAME }}/match-service:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/match-service:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/match-service:${{ github.sha }}

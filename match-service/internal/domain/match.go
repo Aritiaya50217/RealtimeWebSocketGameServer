@@ -3,7 +3,8 @@ package domain
 import "time"
 
 type Match struct {
-	ID        string    `json:"id" gorm:"primaryKey"`
-	PlayerIDs []string  `json:"player_ids" gorm:"-"`
+	ID        int64     `json:"id" gorm:"primaryKey"`
+	PlayerIDs []int64   `json:"player_ids" gorm:"-"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 }

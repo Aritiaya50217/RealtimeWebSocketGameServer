@@ -3,45 +3,69 @@ package main
 import (
 	"log"
 	"os"
-
-	"github.com/gin-gonic/gin"
-	"github.com/segmentio/kafka-go"
+	"time"
 
 	httpAdapter "realtime_web_socket_game_server/match-service/internal/adapter/http"
 	kafkaAdapter "realtime_web_socket_game_server/match-service/internal/adapter/kafka"
-	"realtime_web_socket_game_server/match-service/internal/adapter/repository"
+	repoAdapter "realtime_web_socket_game_server/match-service/internal/adapter/repository"
 	"realtime_web_socket_game_server/match-service/internal/application/usecase"
 	"realtime_web_socket_game_server/match-service/internal/infrastructure/database"
+
+	"github.com/gin-gonic/gin"
+	"github.com/segmentio/kafka-go"
 )
 
 func main() {
-
 	port := os.Getenv("MATCH_SERVICE_PORT")
 	if port == "" {
 		port = "8081"
 	}
 
-	// connect to database
+	// ----------------------------
+	// Connect to database
 	db := database.NewPostgresDB()
-	// repository
-	matchRepo := repository.NewMatchRepository(db)
+	log.Println("Database connected successfully")
 
-	// kafka
-	writer := &kafka.Writer{
-		Addr:  kafka.TCP("localhost:9092"),
-		Topic: "match_created",
+	// ----------------------------
+	// Repository
+	matchRepo := repoAdapter.NewMatchRepository(db)
+	outboxRepo := repoAdapter.NewOutboxRepository(db)
+
+	// ----------------------------
+	// Kafka admin: ensure topic exists
+	kafkaBroker := os.Getenv("KAFKA_BROKER")
+	topicMatchCreated := os.Getenv("KAFKA_TOPIC_MATCH_CREATED")
+	kafkaAdmin := kafkaAdapter.NewKafkaAdmin(kafkaBroker)
+
+	if err := kafkaAdmin.EnsureTopic(topicMatchCreated, 1); err != nil {
+		log.Fatalf("Failed to ensure topic %s: %v", topicMatchCreated, err)
 	}
-	producer := kafkaAdapter.NewKafkaProducer(writer)
+	log.Printf("Kafka topic %s ready", topicMatchCreated)
 
-	// usecase
-	uc := usecase.NewMatchUsecase(matchRepo, producer)
+	// ----------------------------
+	// Kafka writer / producer
+	writer := &kafka.Writer{
+		Addr:     kafka.TCP(kafkaBroker),
+		Topic:    topicMatchCreated,
+		Balancer: &kafka.LeastBytes{},
+	}
+	// ----------------------------
+	// Usecase
+	uc := usecase.NewMatchUsecase(matchRepo, outboxRepo)
 
-	// handler
+	// ----------------------------
+	// HTTP Handler
 	handler := httpAdapter.NewMatchHandler(uc)
 
 	r := gin.Default()
 	r.POST("/match/create", handler.CreateMatch)
 
-	log.Println("match-service running on :" + port)
-	r.Run(":" + port)
+	// Start outbox worker
+	outboxWorker := kafkaAdapter.NewOutboxWorker(outboxRepo, writer, 5*time.Second)
+	outboxWorker.Start()
+
+	log.Println("match-service running on port :" + port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 }

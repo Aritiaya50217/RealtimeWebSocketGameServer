@@ -17,7 +17,7 @@ func NewMatchHandler(usecase *usecase.MatchUsecase) *MatchHandler {
 
 func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	var req struct {
-		PlayerIDs []string `json:"player_ids" binding:"required,min=2"`
+		PlayerIDs []int64 `json:"player_ids" binding:"required,min=2"`
 	}
 
 	if err := c.BindJSON(&req); err != nil {

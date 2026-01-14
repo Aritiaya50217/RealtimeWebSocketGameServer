@@ -1,6 +1,8 @@
 version: "3.9"
 
 services:
+  # ----------------------------
+  # Auth Service DB
   postgres-auth-service:
     image: postgres:16
     container_name: postgres-auth-service
@@ -11,7 +13,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_auth_data:/var/lib/postgresql/data
 
   auth-service:
     build:
@@ -26,19 +28,8 @@ services:
       - postgres-auth-service
     restart: always
 
-  match-service:
-    build:
-      context: ./match-service
-      dockerfile: Dockerfile
-    container_name: match_service
-    ports:
-      - "${MATCH_SERVICE_PORT}:8080"
-    env_file:
-      - .env
-    depends_on:
-      - postgres-match-service
-    restart: always
-
+  # ----------------------------
+  # Match Service DB
   postgres-match-service:
     image: postgres:16
     container_name: postgres-match-service
@@ -49,8 +40,64 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_match_data:/var/lib/postgresql/data
 
-      
+  match-service:
+    build:
+      context: ./match-service
+      dockerfile: Dockerfile
+    container_name: match_service
+    ports:
+      - "${MATCH_SERVICE_PORT}:8081"
+    env_file:
+      - .env
+    depends_on:
+      - postgres-match-service
+      - kafka
+    restart: always
+
+  # ----------------------------
+  # Zookeeper (required for Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.7.0
+    container_name: workflow-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    restart: always
+
+  # ----------------------------
+  # Kafka Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.7.0
+    container_name: workflow-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: always
+
 volumes:
-  postgres_data:
+  postgres_auth_data:
+  postgres_match_data:
+  kafka_data:
