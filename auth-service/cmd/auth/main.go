@@ -34,7 +34,7 @@ func main() {
 	registerUsecase := usecase.NewRegisterUsecase(authRepo)
 
 	r := gin.Default()
-	handler := http.NewAuthHandler(loginUsecase, registerUsecase, refreshUsecase)
+	handler := http.NewAuthHandler(loginUsecase, registerUsecase, refreshUsecase, jwtSecret)
 
 	r.POST("/login", handler.Login)
 	r.POST("/register", handler.Register)

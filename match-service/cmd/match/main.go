@@ -53,12 +53,10 @@ func main() {
 	// Usecase
 	uc := usecase.NewMatchUsecase(matchRepo, outboxRepo)
 
+	r := gin.Default()
 	// ----------------------------
 	// HTTP Handler
-	handler := httpAdapter.NewMatchHandler(uc)
-
-	r := gin.Default()
-	r.POST("/match/create", handler.CreateMatch)
+	httpAdapter.NewMatchHandler(r, uc, os.Getenv("JWT_SECRET"))
 
 	// Start outbox worker
 	outboxWorker := kafkaAdapter.NewOutboxWorker(outboxRepo, writer, 5*time.Second)

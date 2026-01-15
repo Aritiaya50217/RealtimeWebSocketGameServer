@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"realtime_web_socket_game_server/auth-service/internal/helper"
 	"realtime_web_socket_game_server/auth-service/internal/port"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,13 +33,9 @@ func (uc *RefreshTokenUsecase) Generate(userID string) (string, error) {
 		return "", err
 	}
 
-	userid, err := strconv.ParseInt(userID, 10, 64)
-	if err != nil {
-		return "", err
-	}
-
+	uid, _ := strconv.ParseInt(userID, 10, 64)
 	expiresAt := time.Now().Add(7 * 24 * time.Hour)
-	if err := uc.tokenRepo.Save(userid, tokenStr, expiresAt); err != nil {
+	if err := uc.tokenRepo.Save(uid, tokenStr, expiresAt); err != nil {
 		return "", err
 	}
 
@@ -56,9 +53,13 @@ func (uc *RefreshTokenUsecase) Refresh(refreshToken, accessSecret string) (strin
 		return "", errors.New("refresh token expired")
 	}
 
-	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+	claims := helper.AccessTokenClaims{
+		UserID: userID,
+		Scope:  "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

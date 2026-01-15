@@ -33,6 +33,7 @@ func (uc *MatchUsecase) Create(playerIDs []int64) (*domain.Match, error) {
 		AggregateID: match.ID,
 		EventType:   "MatchCreated",
 		Payload:     payload,
+		ProcessedAt: time.Now(),
 	}
 
 	if err := uc.outboxRepo.Save(outboxEvent); err != nil {

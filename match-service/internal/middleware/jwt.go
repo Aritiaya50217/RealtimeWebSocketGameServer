@@ -2,55 +2,50 @@ package middleware
 
 import (
 	"net/http"
-	"realtime_web_socket_game_server/auth-service/internal/helper"
 	"strings"
+	"time"
+
+	"realtime_web_socket_game_server/match-service/internal/helper"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// JWTMiddleware สำหรับ validate access token
-func JWTMiddleware(secret string) gin.HandlerFunc {
+func JWTMiddleware(accessSecret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// ตรวจ header
 		authHeader := c.GetHeader("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+			c.AbortWithStatusJSON(401, gin.H{"error": "missing token"})
 			return
 		}
 
-		// ดึง token
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// parse token + validate signature
 		token, err := jwt.ParseWithClaims(
 			tokenStr,
 			&helper.AccessTokenClaims{},
 			func(t *jwt.Token) (interface{}, error) {
-				// ตรวจ signing method
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, jwt.ErrSignatureInvalid
 				}
-				return []byte(secret), nil
+				return []byte(accessSecret), nil
 			},
+			jwt.WithLeeway(5*time.Second), // buffer เล็ก ๆ ป้องกัน clock drift
 		)
 
 		if err != nil || !token.Valid {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
 			return
 		}
 
 		claims := token.Claims.(*helper.AccessTokenClaims)
 
-		// ให้เป็น access token เท่านั้น
 		if claims.Scope != "access" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "refresh token not allowed"})
 			return
 		}
 
-		// inject user_id ให้ handler / usecase ใช้ต่อ
 		c.Set("user_id", claims.UserID)
-
 		c.Next()
 	}
 }

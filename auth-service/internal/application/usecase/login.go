@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"realtime_web_socket_game_server/auth-service/internal/helper"
 	"realtime_web_socket_game_server/auth-service/internal/port"
 	"strconv"
 	"time"
@@ -29,10 +30,14 @@ func (uc *LoginUsecase) Login(username, password string) (string, string, error)
 		return "", "", errors.New("invalid credentials")
 	}
 
-	// generate access token
-	claims := jwt.MapClaims{
-		"user_id": user.ID,
-		"exp":     time.Now().Add(15 * time.Minute).Unix(),
+	// generate access token ด้วย struct
+	claims := helper.AccessTokenClaims{
+		UserID: strconv.Itoa(int(user.ID)),
+		Scope:  "access",
+		RegisteredClaims: jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), // access token 15 นาที
+		},
 	}
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(uc.JWTSecret))

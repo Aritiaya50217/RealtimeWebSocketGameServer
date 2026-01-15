@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 	"realtime_web_socket_game_server/match-service/internal/application/usecase"
+	"realtime_web_socket_game_server/match-service/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,11 +12,25 @@ type MatchHandler struct {
 	usecase *usecase.MatchUsecase
 }
 
-func NewMatchHandler(usecase *usecase.MatchUsecase) *MatchHandler {
-	return &MatchHandler{usecase: usecase}
+func NewMatchHandler(r *gin.Engine, usecase *usecase.MatchUsecase, jwtSecret string) *MatchHandler {
+	handler := &MatchHandler{
+		usecase: usecase,
+	}
+
+	match := r.Group("/match")
+	match.Use(middleware.JWTMiddleware(jwtSecret))
+	match.POST("/create", handler.CreateMatch)
+
+	return handler
 }
 
 func (h *MatchHandler) CreateMatch(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user not authenticated"})
+		return
+	}
+
 	var req struct {
 		PlayerIDs []int64 `json:"player_ids" binding:"required,min=2"`
 	}

@@ -14,8 +14,8 @@ type AuthHandler struct {
 	accessSecret    string
 }
 
-func NewAuthHandler(uc *usecase.LoginUsecase, registerUsecase *usecase.RegisterUsecase, refreshUsecase *usecase.RefreshTokenUsecase) *AuthHandler {
-	return &AuthHandler{loginUsecase: uc, registerUsecase: registerUsecase, refreshUsecase: refreshUsecase}
+func NewAuthHandler(uc *usecase.LoginUsecase, registerUsecase *usecase.RegisterUsecase, refreshUsecase *usecase.RefreshTokenUsecase, accessSecret string) *AuthHandler {
+	return &AuthHandler{loginUsecase: uc, registerUsecase: registerUsecase, refreshUsecase: refreshUsecase, accessSecret: accessSecret}
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
