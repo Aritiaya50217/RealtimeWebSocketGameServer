@@ -21,7 +21,7 @@ func (r *OutboxRepository) Save(event *domain.OutboxEvent) error {
 
 func (r *OutboxRepository) FindUnprocessed(limit int) ([]*domain.OutboxEvent, error) {
 	var events []*domain.OutboxEvent
-	if err := r.db.Where("procressed = false").Limit(limit).Find(&events).Error; err != nil {
+	if err := r.db.Where("processed = false").Limit(limit).Find(&events).Error; err != nil {
 		return nil, err
 	}
 	return events, nil
