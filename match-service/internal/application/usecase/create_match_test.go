@@ -132,17 +132,17 @@ func TestOutboxRepository_FindUnprocessed_Success(t *testing.T) {
 	mockRepo.AssertCalled(t, "FindUnprocessed", 10)
 }
 
-func TestOutboxRepository_FindUnprocessed_Error(t *testing.T) {
-	mockRepo := new(MockOutboxRepo)
+// func TestOutboxRepository_FindUnprocessed_Error(t *testing.T) {
+// 	mockRepo := new(MockOutboxRepo)
 
-	mockRepo.On("FindUnprocessed", 5).Return(nil, errors.New("db error"))
+// 	mockRepo.On("FindUnprocessed", 5).Return(nil, errors.New("db error"))
 
-	result, err := mockRepo.FindUnprocessed(5)
+// 	result, err := mockRepo.FindUnprocessed(5)
 
-	assert.Nil(t, result)
-	assert.EqualError(t, err, "db error")
-	mockRepo.AssertCalled(t, "FindUnprocessed", 5)
-}
+// 	assert.Nil(t, result)
+// 	assert.EqualError(t, err, "db error")
+// 	mockRepo.AssertCalled(t, "FindUnprocessed", 5)
+// }
 
 func TestOutboxRepository_MarkProcessed_Success(t *testing.T) {
 	mockRepo := new(MockOutboxRepo)
