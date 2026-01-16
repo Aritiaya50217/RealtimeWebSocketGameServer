@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"realtime_web_socket_game_server/match-service/internal/domain"
 
 	"gorm.io/gorm"
@@ -24,4 +25,16 @@ func (r *MatchRepository) Save(match *domain.Match) error {
 	// Set auto-generated ID back to domain
 	match.ID = matchModel.ID
 	return nil
+}
+
+func (r *MatchRepository) GetByID(id int64) (*domain.Match, error) {
+	var matchModel MatchModel
+	if err := r.db.First("id = ? ", id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("customer NotFound error")
+		}
+		return nil, err
+	}
+
+	return ToMatchDomain(matchModel), nil
 }

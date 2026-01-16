@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"realtime_web_socket_game_server/match-service/internal/application/usecase"
 	"realtime_web_socket_game_server/match-service/internal/middleware"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +21,7 @@ func NewMatchHandler(r *gin.Engine, usecase *usecase.MatchUsecase, jwtSecret str
 	match := r.Group("/match")
 	match.Use(middleware.JWTMiddleware(jwtSecret))
 	match.POST("/create", handler.CreateMatch)
+	match.GET("/:id", handler.GetMatchByID)
 
 	return handler
 }
@@ -47,4 +49,26 @@ func (h *MatchHandler) CreateMatch(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, match)
+}
+
+func (h *MatchHandler) GetMatchByID(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid match id"})
+		return
+	}
+
+	match, err := h.usecase.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	if match == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "match not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"match": match})
+
 }

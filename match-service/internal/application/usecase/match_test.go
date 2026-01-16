@@ -5,6 +5,7 @@ import (
 	"realtime_web_socket_game_server/match-service/internal/application/usecase"
 	"realtime_web_socket_game_server/match-service/internal/domain"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -24,6 +25,14 @@ func (m *MockMatchRepo) Save(match *domain.Match) error {
 		match.ID = 100 // simulate auto increment ID
 	}
 	return args.Error(0)
+}
+
+func (m *MockMatchRepo) GetByID(id int64) (*domain.Match, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Match), args.Error(1)
 }
 
 type MockOutboxRepo struct {
@@ -164,4 +173,57 @@ func TestOutboxRepository_MarkProcessed_Error(t *testing.T) {
 
 	assert.EqualError(t, err, "db error")
 	mockRepo.AssertCalled(t, "MarkProcessed", int64(200))
+}
+
+func TestMatchUsecase_GetByID_Success(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatch := &domain.Match{
+		ID:        1,
+		PlayerIDs: []int64{1, 2},
+		Status:    "created",
+		CreatedAt: time.Now(),
+	}
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(mockMatch, nil)
+
+	match, err := uc.GetByID(1)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, match)
+	mockMatchRepo.AssertExpectations(t)
+}
+
+func TestMatchUsecase_GetByID_NotFound(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(99)).Return(nil, errors.New("customer NotFound error"))
+
+	match, err := uc.GetByID(99)
+	assert.Nil(t, match)
+	assert.EqualError(t, err, "customer NotFound error")
+
+	mockMatchRepo.AssertExpectations(t)
+}
+
+func TestMatchUsecase_GetByID_Error(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(nil, errors.New("DB error"))
+
+	match, err := uc.GetByID(1)
+	assert.Error(t, err)
+	assert.Nil(t, match)
+	assert.Equal(t, "DB error", err.Error())
+
+	mockMatchRepo.AssertExpectations(t)
 }
