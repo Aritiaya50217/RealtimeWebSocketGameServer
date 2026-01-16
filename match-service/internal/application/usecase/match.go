@@ -52,3 +52,7 @@ func (uc *MatchUsecase) Create(playerIDs []int64) (*domain.Match, error) {
 func (uc *MatchUsecase) GetByID(id int64) (*domain.Match, error) {
 	return uc.matchRepo.GetByID(id)
 }
+
+func (uc *MatchUsecase) List(status string, limit, offset int) ([]*domain.Match, int64, error) {
+	return uc.matchRepo.List(status, limit, offset)
+}

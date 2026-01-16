@@ -28,3 +28,11 @@ func ToMatchModel(d *domain.Match) *MatchModel {
 		UpdatedAt: d.UpdatedAt,
 	}
 }
+
+func ToMatchDomainList(matches []*MatchModel) []*domain.Match {
+	list := make([]*domain.Match, 0, len(matches))
+	for _, match := range matches {
+		list = append(list, ToMatchDomain(*match))
+	}
+	return list
+}

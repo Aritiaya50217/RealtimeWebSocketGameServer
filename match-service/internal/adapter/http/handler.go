@@ -22,6 +22,7 @@ func NewMatchHandler(r *gin.Engine, usecase *usecase.MatchUsecase, jwtSecret str
 	match.Use(middleware.JWTMiddleware(jwtSecret))
 	match.POST("/create", handler.CreateMatch)
 	match.GET("/:id", handler.GetMatchByID)
+	match.GET("/list", handler.List)
 
 	return handler
 }
@@ -71,4 +72,18 @@ func (h *MatchHandler) GetMatchByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"match": match})
 
+}
+
+func (h *MatchHandler) List(c *gin.Context) {
+	status := c.Query("status")
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	matches, total, err := h.usecase.List(status, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"total": total, "matches": matches, "limit": limit, "offset": offset})
 }

@@ -35,6 +35,22 @@ func (m *MockMatchRepo) GetByID(id int64) (*domain.Match, error) {
 	return args.Get(0).(*domain.Match), args.Error(1)
 }
 
+func (m *MockMatchRepo) List(strtus string, limit, offset int) ([]*domain.Match, int64, error) {
+	args := m.Called(strtus, limit, offset)
+	var matches []*domain.Match
+
+	if args.Get(0) != nil {
+		matches = args.Get(0).([]*domain.Match)
+	}
+
+	var total int64
+	if args.Get(1) != nil {
+		total = args.Get(1).(int64)
+	}
+
+	return matches, total, args.Error(2)
+}
+
 type MockOutboxRepo struct {
 	mock.Mock
 }
@@ -224,6 +240,48 @@ func TestMatchUsecase_GetByID_Error(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, match)
 	assert.Equal(t, "DB error", err.Error())
+
+	mockMatchRepo.AssertExpectations(t)
+}
+
+func TestMatchUsecase_List_Success(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	expectedMatches := []*domain.Match{
+		{ID: 1, PlayerIDs: []int64{1, 2}, Status: "created", CreatedAt: time.Now()},
+		{ID: 2, PlayerIDs: []int64{1, 2}, Status: "created", CreatedAt: time.Now()},
+	}
+
+	expectedTotal := int64(5)
+
+	mockMatchRepo.On("List", "created", 5, 0).Return(expectedMatches, expectedTotal, nil)
+
+	matches, total, err := uc.List("created", 5, 0)
+
+	assert.NoError(t, err)
+	assert.Len(t, matches, 2)
+	assert.Equal(t, expectedTotal, total)
+	assert.Equal(t, int64(1), matches[0].ID)
+
+	mockMatchRepo.AssertExpectations(t)
+
+}
+
+func TestMatchUsecase_List_Empty(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("List", "", 10, 0).Return([]*domain.Match{}, int64(0), nil)
+	
+	matches, total, err := uc.List("", 10, 0)
+	assert.NoError(t, err)
+	assert.Len(t, matches, 0)
+	assert.Equal(t, int64(0), total)
 
 	mockMatchRepo.AssertExpectations(t)
 }

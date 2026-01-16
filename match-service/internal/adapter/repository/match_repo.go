@@ -38,3 +38,24 @@ func (r *MatchRepository) GetByID(id int64) (*domain.Match, error) {
 
 	return ToMatchDomain(matchModel), nil
 }
+
+func (r *MatchRepository) List(status string, limit, offset int) ([]*domain.Match, int64, error) {
+	var matches []*MatchModel
+	var total int64
+
+	query := r.db.Model(&MatchModel{})
+
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if err := query.Limit(limit).Offset(offset).Find(&matches).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return ToMatchDomainList(matches), total, nil
+}
