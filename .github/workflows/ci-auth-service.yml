@@ -3,8 +3,15 @@ name: CI/CD Pipeline
 on:
   push:
     branches: ["main"]
+    paths:
+      - "auth-service/**"
+      - ".github/workflows/ci-auth-service.yml"
+      
   pull_request:
     branches: ["main"]
+    paths:
+      - "auth-service/**"
+      - ".github/workflows/ci-auth-service.yml"
   workflow_dispatch:
 
 jobs:
