@@ -3,11 +3,10 @@ package domain
 import "time"
 
 type Refresh struct {
-	ID        int64  `gorm:"primaryKey;autoIncrement"`
-	UserID    int64  `gorm:"not null;index"`
-	User      *User  `gorm:"foreignKey:UserID"`
-	Token     string `gorm:"not null" json:"-"`
+	ID        int64  `json:"id"`
+	UserID    int64  `json:"user_id"`
+	Token     string `json:"token"`
 	ExpiresAt time.Time
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

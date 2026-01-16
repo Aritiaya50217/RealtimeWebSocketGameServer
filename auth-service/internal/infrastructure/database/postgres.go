@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"realtime_web_socket_game_server/auth-service/internal/domain"
+	"realtime_web_socket_game_server/auth-service/internal/adapter/repository"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -52,7 +52,7 @@ func NewPostgresDB() *gorm.DB {
 	}
 
 	// AutoMigrate
-	if err := db.AutoMigrate(&domain.User{}, &domain.Refresh{}); err != nil {
+	if err := db.AutoMigrate(&repository.UserModel{}, &repository.RefreshModel{}); err != nil {
 		log.Fatalf("failed to auto-migrate: %v", err)
 	}
 

@@ -3,9 +3,9 @@ package domain
 import "time"
 
 type User struct {
-	ID        int64     `gorm:"primaryKey;autoIncrement"`
-	Username  string    `gorm:"unique;not null" json:"username"`
-	Password  string    `gorm:"not null" json:"-"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	Password  string    `json:"password"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

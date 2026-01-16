@@ -1,10 +1,8 @@
-package postgres
+package repository
 
 import (
 	"strconv"
 	"time"
-
-	"realtime_web_socket_game_server/auth-service/internal/domain"
 
 	"gorm.io/gorm"
 )
@@ -18,7 +16,7 @@ func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
 }
 
 func (r *RefreshTokenRepository) Save(userID int64, token string, expiresAt time.Time) error {
-	refresh := &domain.Refresh{
+	refresh := &RefreshModel{
 		UserID:    userID,
 		Token:     token,
 		ExpiresAt: expiresAt,
@@ -27,7 +25,7 @@ func (r *RefreshTokenRepository) Save(userID int64, token string, expiresAt time
 }
 
 func (r *RefreshTokenRepository) Find(token string) (string, time.Time, error) {
-	var refresh domain.Refresh
+	var refresh RefreshModel
 	if err := r.db.Where("token = ?", token).First(&refresh).Error; err != nil {
 		return "", time.Time{}, err
 	}
@@ -35,5 +33,5 @@ func (r *RefreshTokenRepository) Find(token string) (string, time.Time, error) {
 }
 
 func (r *RefreshTokenRepository) Delete(token string) error {
-	return r.db.Where("token = ?", token).Delete(&domain.Refresh{}).Error
+	return r.db.Where("token = ?", token).Delete(&RefreshModel{}).Error
 }

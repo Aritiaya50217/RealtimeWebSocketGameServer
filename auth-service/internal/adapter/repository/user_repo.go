@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"realtime_web_socket_game_server/auth-service/internal/domain"
@@ -15,13 +15,16 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 func (r *UserRepository) GetByUsername(username string) (*domain.User, error) {
-	var user domain.User
-	if err := r.db.Where("username = ?", username).First(&user).Error; err != nil {
+	var userModel UserModel
+	if err := r.db.Where("username = ?", username).First(&userModel).Error; err != nil {
 		return nil, err
 	}
-	return &user, nil
+	user := ToUserDomain(userModel)
+
+	return user, nil
 }
 
 func (r *UserRepository) CreateUser(user *domain.User) error {
-	return r.db.Create(user).Error
+	userModel := ToUserModel(user)
+	return r.db.Create(userModel).Error
 }

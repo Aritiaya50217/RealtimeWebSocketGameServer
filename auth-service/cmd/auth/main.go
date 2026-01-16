@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 	"realtime_web_socket_game_server/auth-service/internal/adapter/http"
-	"realtime_web_socket_game_server/auth-service/internal/adapter/repository/postgres"
+	"realtime_web_socket_game_server/auth-service/internal/adapter/repository"
 	"realtime_web_socket_game_server/auth-service/internal/application/usecase"
 	"realtime_web_socket_game_server/auth-service/internal/infrastructure/database"
 
@@ -26,8 +26,8 @@ func main() {
 	// connect to database
 	db := database.NewPostgresDB()
 
-	authRepo := postgres.NewUserRepository(db)
-	refreshRepo := postgres.NewRefreshTokenRepository(db)
+	authRepo := repository.NewUserRepository(db)
+	refreshRepo := repository.NewRefreshTokenRepository(db)
 
 	refreshUsecase := usecase.NewRefreshTokenUsecase(refreshRepo, jwtSecret)
 	loginUsecase := usecase.NewLoginUsecase(authRepo, refreshUsecase, jwtSecret)
