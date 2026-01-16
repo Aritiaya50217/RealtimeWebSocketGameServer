@@ -51,6 +51,15 @@ func (m *MockMatchRepo) List(strtus string, limit, offset int) ([]*domain.Match,
 	return matches, total, args.Error(2)
 }
 
+func (m *MockMatchRepo) UpdateStatus(id int64, status string) (*domain.Match, error) {
+	args := m.Called(id, status)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+
+	return args.Get(0).(*domain.Match), args.Error(1)
+}
+
 type MockOutboxRepo struct {
 	mock.Mock
 }
@@ -277,11 +286,155 @@ func TestMatchUsecase_List_Empty(t *testing.T) {
 	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
 
 	mockMatchRepo.On("List", "", 10, 0).Return([]*domain.Match{}, int64(0), nil)
-	
+
 	matches, total, err := uc.List("", 10, 0)
 	assert.NoError(t, err)
 	assert.Len(t, matches, 0)
 	assert.Equal(t, int64(0), total)
 
 	mockMatchRepo.AssertExpectations(t)
+}
+
+func TestMatchUsecase_UpdateStatus_Success(t *testing.T) {
+	match := &domain.Match{
+		ID:     1,
+		Status: domain.StatusCreated,
+	}
+
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(match, nil)
+	mockMatchRepo.On("UpdateStatus", int64(1), domain.StatusStarted).Return(match, nil)
+
+	mockOutboxRepo.On("Save", mock.AnythingOfType("*domain.OutboxEvent")).Return(nil)
+
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.NoError(t, err)
+	assert.Equal(t, domain.StatusStarted, result.Status)
+
+	mockMatchRepo.AssertExpectations(t)
+	mockOutboxRepo.AssertExpectations(t)
+}
+
+func TestMatchUsecase_UpdateStatus_GetByIDError(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(nil, errors.New("db error"))
+
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.Nil(t, result)
+	assert.Equal(t, "db error", err.Error())
+
+	mockOutboxRepo.AssertNotCalled(t, "Save", mock.Anything)
+}
+
+func TestMatchUsecase_UpdateStatus_NotFound(t *testing.T) {
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(nil, nil)
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "match NotFound")
+
+	mockOutboxRepo.AssertNotCalled(t, "Save", mock.Anything)
+}
+
+func TestMatchUsecase_UpdateStatus_InvalidStatusTransition(t *testing.T) {
+	match := &domain.Match{
+		ID:     1,
+		Status: domain.StatusStarted,
+	}
+
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(match, nil)
+
+	result, err := uc.UpdateStatus(1, "")
+
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "status cannot be started")
+
+	mockMatchRepo.AssertNotCalled(t, "UpdateStatus", mock.Anything, mock.Anything)
+	mockOutboxRepo.AssertNotCalled(t, "Save", mock.Anything)
+}
+
+func TestMatchUsecase_UpdateStatus_AlreadyStarted(t *testing.T) {
+	match := &domain.Match{
+		ID:     1,
+		Status: domain.StatusStarted,
+	}
+
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(match, nil)
+
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "the current status is started")
+
+	mockMatchRepo.AssertNotCalled(t, "UpdateStatus", mock.Anything, mock.Anything)
+	mockOutboxRepo.AssertNotCalled(t, "Save", mock.Anything)
+}
+
+func TestMatchUsecase_UpdateStatus_UpdateReqoError(t *testing.T) {
+	match := &domain.Match{
+		ID:     1,
+		Status: domain.StatusCreated,
+	}
+
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(match, nil)
+	mockMatchRepo.On("UpdateStatus", int64(1), domain.StatusStarted).Return(nil, errors.New("update error"))
+
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "update error")
+
+	mockMatchRepo.AssertNotCalled(t, "Save", mock.Anything)
+}
+
+func TestMatchUsecase_UpdateStatus_OutboxError(t *testing.T) {
+	match := &domain.Match{
+		ID:     1,
+		Status: domain.StatusCreated,
+	}
+
+	mockMatchRepo := new(MockMatchRepo)
+	mockOutboxRepo := new(MockOutboxRepo)
+
+	uc := usecase.NewMatchUsecase(mockMatchRepo, mockOutboxRepo)
+
+	mockMatchRepo.On("GetByID", int64(1)).Return(match, nil)
+	mockMatchRepo.On("UpdateStatus", int64(1), domain.StatusStarted).Return(match, nil)
+
+	mockOutboxRepo.On("Save", mock.Anything).Return(errors.New("outbox error"))
+
+	result, err := uc.UpdateStatus(1, domain.StatusStarted)
+
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "outbox error")
 }
