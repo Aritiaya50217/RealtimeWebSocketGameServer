@@ -20,15 +20,22 @@ func (r *OutboxRepository) Save(event *domain.OutboxEvent) error {
 }
 
 func (r *OutboxRepository) FindUnprocessed(limit int) ([]*domain.OutboxEvent, error) {
-	var events []*domain.OutboxEvent
-	if err := r.db.Where("processed = false").Limit(limit).Find(&events).Error; err != nil {
+	var eventsModel []OutboxEventModel
+	if err := r.db.Where("processed = false").Limit(limit).Find(&eventsModel).Error; err != nil {
 		return nil, err
 	}
+
+	events := make([]*domain.OutboxEvent, 0, len(eventsModel))
+	for _, m := range eventsModel {
+		events = append(events, ToOutboxDomain(m))
+	}
+
 	return events, nil
 }
 
 func (r *OutboxRepository) MarkProcessed(eventID int64) error {
-	return r.db.Model(&domain.OutboxEvent{}).Where("id = ?", eventID).Updates(map[string]interface{}{
+	var outboxModel OutboxEventModel
+	return r.db.Model(&outboxModel).Where("id = ?", eventID).Updates(map[string]interface{}{
 		"processed":    true,
 		"processed_at": time.Now(),
 	}).Error

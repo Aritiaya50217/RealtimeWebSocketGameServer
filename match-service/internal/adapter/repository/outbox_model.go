@@ -1,9 +1,9 @@
-package domain
+package repository
 
 import "time"
 
-type OutboxEvent struct {
-	ID          int64
+type OutboxEventModel struct {
+	ID          int64 `json:"id" gorm:"primaryKey"`
 	AggregateID int64
 	EventType   string
 	Payload     string // JSON string

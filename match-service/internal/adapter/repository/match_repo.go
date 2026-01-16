@@ -14,6 +14,7 @@ func NewMatchRepository(db *gorm.DB) *MatchRepository {
 	return &MatchRepository{db: db}
 }
 
-func (r *MatchRepository) Save(match *domain.Match)error{
-	return r.db.Create(match).Error
+func (r *MatchRepository) Save(match *domain.Match) error {
+	var matchModel MatchModel
+	return r.db.Create(matchModel).Error
 }

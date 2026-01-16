@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+
 	"realtime_web_socket_game_server/match-service/internal/domain"
 
 	"github.com/golang-jwt/jwt/v5"
