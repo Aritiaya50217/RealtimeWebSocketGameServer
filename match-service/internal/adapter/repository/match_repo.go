@@ -29,7 +29,7 @@ func (r *MatchRepository) Save(match *domain.Match) error {
 
 func (r *MatchRepository) GetByID(id int64) (*domain.Match, error) {
 	var matchModel MatchModel
-	if err := r.db.First("id = ? ", id).Error; err != nil {
+	if err := r.db.Where("id = ? ", id).First(&matchModel).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("customer NotFound error")
 		}
