@@ -99,9 +99,6 @@ func (uc *MatchUsecase) UpdateStatus(id int64, status string) (*domain.Match, er
 	if err := uc.outboxRepo.Save(outboxEvent); err != nil {
 		return nil, err
 	}
-
-	if err != nil {
-		return nil, err
-	}
+	
 	return match, nil
 }
