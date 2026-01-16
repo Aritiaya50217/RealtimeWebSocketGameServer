@@ -15,6 +15,13 @@ func NewMatchRepository(db *gorm.DB) *MatchRepository {
 }
 
 func (r *MatchRepository) Save(match *domain.Match) error {
-	var matchModel MatchModel
-	return r.db.Create(matchModel).Error
+	matchModel := ToMatchModel(match)
+	err := r.db.Create(matchModel).Error
+	if err != nil {
+		return err
+	}
+
+	// Set auto-generated ID back to domain
+	match.ID = matchModel.ID
+	return nil
 }

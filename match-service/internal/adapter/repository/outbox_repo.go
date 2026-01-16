@@ -16,7 +16,7 @@ func NewOutboxRepository(db *gorm.DB) *OutboxRepository {
 }
 
 func (r *OutboxRepository) Save(event *domain.OutboxEvent) error {
-	return r.db.Create(event).Error
+	return r.db.Create(ToOutboxModel(event)).Error
 }
 
 func (r *OutboxRepository) FindUnprocessed(limit int) ([]*domain.OutboxEvent, error) {

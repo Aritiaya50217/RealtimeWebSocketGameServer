@@ -1,7 +1,7 @@
 package usecase
 
 import (
-	"fmt"
+	"encoding/json"
 	"realtime_web_socket_game_server/match-service/internal/domain"
 	"realtime_web_socket_game_server/match-service/internal/port"
 	"time"
@@ -21,6 +21,7 @@ func (uc *MatchUsecase) Create(playerIDs []int64) (*domain.Match, error) {
 		PlayerIDs: playerIDs,
 		Status:    "created",
 		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
 	if err := uc.matchRepo.Save(match); err != nil {
@@ -28,12 +29,17 @@ func (uc *MatchUsecase) Create(playerIDs []int64) (*domain.Match, error) {
 	}
 
 	// save event to outbox
-	payload := fmt.Sprintf(`{"match_id": %d, "players": %v}`, match.ID, playerIDs)
+	payload, err := json.Marshal(match)
+	if err != nil {
+		return nil, err
+	}
+
 	outboxEvent := &domain.OutboxEvent{
 		AggregateID: match.ID,
 		EventType:   "MatchCreated",
-		Payload:     payload,
+		Payload:     string(payload),
 		ProcessedAt: time.Now(),
+		CreatedAt:   time.Now(),
 	}
 
 	if err := uc.outboxRepo.Save(outboxEvent); err != nil {
