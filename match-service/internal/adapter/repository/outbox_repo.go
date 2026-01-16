@@ -40,3 +40,12 @@ func (r *OutboxRepository) MarkProcessed(eventID int64) error {
 		"processed_at": time.Now(),
 	}).Error
 }
+
+func (r *OutboxRepository) SaveTx(tx *gorm.DB, event *domain.OutboxEvent) error {
+	return tx.Create(&OutboxEventModel{
+		AggregateID: event.AggregateID,
+		EventType:   event.EventType,
+		Payload:     event.Payload,
+		Processed:   false,
+	}).Error
+}

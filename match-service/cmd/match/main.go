@@ -26,6 +26,8 @@ func main() {
 	db := database.NewPostgresDB()
 	log.Println("Database connected successfully")
 
+	transaction := database.NewTransaction(db)
+
 	// ----------------------------
 	// Repository
 	matchRepo := repoAdapter.NewMatchRepository(db)
@@ -51,7 +53,7 @@ func main() {
 	}
 	// ----------------------------
 	// Usecase
-	uc := usecase.NewMatchUsecase(matchRepo, outboxRepo)
+	uc := usecase.NewMatchUsecase(matchRepo, outboxRepo, *transaction)
 
 	r := gin.Default()
 	// ----------------------------

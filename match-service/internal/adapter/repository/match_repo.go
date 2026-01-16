@@ -67,3 +67,23 @@ func (r *MatchRepository) UpdateStatus(id int64, status string) (*domain.Match, 
 	}
 	return ToMatchDomain(match), nil
 }
+
+func (r *MatchRepository) GetByIDTx(tx *gorm.DB, id int64) (*domain.Match, error) {
+	var matchModel MatchModel
+	if err := tx.Where("id = ? ", id).First(&matchModel).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("customer NotFound error")
+		}
+		return nil, err
+	}
+
+	return ToMatchDomain(matchModel), nil
+}
+
+func (r *MatchRepository) UpdateStatusTx(tx *gorm.DB, id int64, status string) (*domain.Match, error) {
+	if err := tx.Model(&MatchModel{}).Where("id = ?", id).Update("status", status).Error; err != nil {
+		return nil, err
+	}
+
+	return r.GetByIDTx(tx, id)
+}
