@@ -2,6 +2,11 @@ package domain
 
 import "time"
 
+const (
+	StatusCreated = "created"
+	StatusStarted = "started"
+)
+
 type Match struct {
 	ID        int64     `json:"id"`
 	PlayerIDs []int64   `json:"player_ids"`

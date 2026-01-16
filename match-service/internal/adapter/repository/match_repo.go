@@ -59,3 +59,11 @@ func (r *MatchRepository) List(status string, limit, offset int) ([]*domain.Matc
 
 	return ToMatchDomainList(matches), total, nil
 }
+
+func (r *MatchRepository) UpdateStatus(id int64, status string) (*domain.Match, error) {
+	var match MatchModel
+	if err := r.db.Model(&MatchModel{}).Where("id = ?", id).Update("status", status).Error; err != nil {
+		return nil, err
+	}
+	return ToMatchDomain(match), nil
+}

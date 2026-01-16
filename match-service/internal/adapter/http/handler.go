@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"net/http"
 	"realtime_web_socket_game_server/match-service/internal/application/usecase"
 	"realtime_web_socket_game_server/match-service/internal/middleware"
@@ -23,6 +24,7 @@ func NewMatchHandler(r *gin.Engine, usecase *usecase.MatchUsecase, jwtSecret str
 	match.POST("/create", handler.CreateMatch)
 	match.GET("/:id", handler.GetMatchByID)
 	match.GET("/list", handler.List)
+	match.POST("/:id", handler.UpdateStatus)
 
 	return handler
 }
@@ -86,4 +88,22 @@ func (h *MatchHandler) List(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"total": total, "matches": matches, "limit": limit, "offset": offset})
+}
+
+func (h *MatchHandler) UpdateStatus(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid input"})
+		return
+	}
+	status := c.Query("status")
+
+	match, err := h.usecase.UpdateStatus(id, status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	message := fmt.Sprintf("id %d update status success", match.ID)
+	c.JSON(http.StatusOK, gin.H{"message": message})
 }
